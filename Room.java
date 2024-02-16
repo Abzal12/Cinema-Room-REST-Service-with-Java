@@ -9,9 +9,15 @@ public class Room {
 
     private ArrayList<Seat> getAvailableSeats() {
         ArrayList<Seat> seats2 = new ArrayList<>();
+        int cost;
         for (int i = 1; i <= this.rows; i++) {
             for (int j = 1; j <= this.columns; j++) {
-                seats2.add(new Seat(i, j));
+                if (i <= 4) {
+                    cost = 10;
+                } else {
+                    cost = 8;
+                }
+                seats2.add(new Seat(i, j, cost));
             }
         }
         return seats2;
