@@ -1,11 +1,9 @@
 package cinema;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CinemaController {
     Cinema cinema = new Cinema();
     Ticket ticket = new Ticket();
+    Statistics stats = new Statistics();
     @GetMapping("/seats")
     public Cinema getCinema() {
         return cinema;
@@ -31,10 +30,10 @@ public class CinemaController {
                 seat1.setReserved(true);
                 ticket.setSeat(seat1);
                 ticket.setToken(seat1.getToken());
-//                return ResponseEntity.ok().body(
-//                        new ConcurrentHashMap<>(Map.of(
-//                               "ticket", seat1, "token", seat1.getToken()))
-//                );
+                stats.substractAvSeat(1);
+                stats.addToBoughtTicket(1);
+                stats.addToIncome(seat1.getPrice());
+                //stats.setIncome(seat1.getPrice());
                 return ResponseEntity.ok(ticket);
             }
         }
@@ -48,11 +47,26 @@ public class CinemaController {
             if(Objects.equals(seat.getToken().getToken(), tokenForRefund.getToken()) && seat.isReserved())
             {
                 seat.setReserved(false);
+                stats.substractAvSeat(-1);
+                stats.addToBoughtTicket(-1);
+                stats.addToIncome(-seat.getPrice());
                 return ResponseEntity.ok().body(new ConcurrentHashMap<>(Map.of("ticket", seat)));
             }
         }
         return ResponseEntity.badRequest().body(
                 new ConcurrentHashMap<>(Map.of("error", "Wrong token!"))
         );
+    }
+    @GetMapping("/stats")
+    public ResponseEntity<?> obtainStats(@RequestParam("password") Optional<String> password) {
+        if (password.isEmpty()) {
+            return ResponseEntity.status(HttpStatusCode.valueOf(401)).body(
+                    new ConcurrentHashMap<>(Map.of("error", "The password is wrong!")));
+        } else if (password.get().equals("super_secret")) {
+            return ResponseEntity.ok().body(stats);
+        }
+
+        return ResponseEntity.status(HttpStatusCode.valueOf(401)).body(
+                new ConcurrentHashMap<>(Map.of("error", "The password is wrong!")));
     }
 }
